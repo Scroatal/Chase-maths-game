@@ -61,7 +61,7 @@ class MathProblemGenerator {
         let max;
         switch (this.difficulty) {
             case 'easy':
-                max = Math.min(5 + (level * 3), 20); // Cap at 20
+                max = Math.min(3 + Math.floor(level/2), 5); // Cap at 5 for 4-year-olds
                 break;
             case 'medium':
                 max = Math.min(10 + (level * 5), 50); // Cap at 50
@@ -102,7 +102,7 @@ class MathProblemGenerator {
         let max;
         switch (this.difficulty) {
             case 'easy':
-                max = Math.min(10 + (level * 2), 20); // Cap at 20
+                max = Math.min(3 + Math.floor(level/2), 5); // Cap at 5 for 4-year-olds
                 break;
             case 'medium':
                 max = Math.min(15 + (level * 5), 50); // Cap at 50
@@ -156,8 +156,8 @@ class MathProblemGenerator {
         // Adjust difficulty based on selected difficulty
         switch (this.difficulty) {
             case 'easy':
-                maxTable = Math.min(level + 1, 5); // Cap at 5 times tables
-                maxMultiplier = Math.min(5 + Math.floor(level/2), 10); // Cap at 10
+                maxTable = 2; // Only use 1x and 2x tables for 4-year-olds
+                maxMultiplier = Math.min(2 + Math.floor(level/2), 5); // Cap at 5
                 break;
             case 'medium':
                 maxTable = Math.min(level + 2, 10); // Cap at 10 times tables
@@ -211,8 +211,8 @@ class MathProblemGenerator {
         // Adjust difficulty based on selected difficulty
         switch (this.difficulty) {
             case 'easy':
-                maxDivisor = Math.min(level + 1, 5); // Cap at 5
-                maxMultiplier = Math.min(3 + Math.floor(level/2), 10); // Cap at 10
+                maxDivisor = 2; // Only use 1 and 2 as divisors for 4-year-olds
+                maxMultiplier = Math.min(2 + Math.floor(level/2), 3); // Cap at 3
                 break;
             case 'medium':
                 maxDivisor = Math.min(level + 2, 10); // Cap at 10
