@@ -303,7 +303,7 @@ class MathRPGGame {
     init() {
         this.setupThreeJS();
         this.createScene();
-        this.createCharacters();
+        this.createImprovedCharacters();
         this.setupGameEventListeners();
         this.startNewLevel();
         this.animate();
@@ -732,7 +732,10 @@ class MathRPGGame {
         if (this.monster) {
             this.scene.remove(this.monster);
         }
-        this.monster = this.createMonsterByOperation(this.selectedOperation, isBoss);
+        // Randomly select a monster type for each battle
+        const monsterTypes = ['addition', 'subtraction', 'multiplication', 'division'];
+        const randomMonsterType = monsterTypes[Math.floor(Math.random() * monsterTypes.length)];
+        this.monster = this.createImprovedMonsterByOperation(randomMonsterType, isBoss);
         this.monster.position.set(3, 0, 0);
         this.scene.add(this.monster);
         
@@ -912,7 +915,7 @@ class MathRPGGame {
                 document.getElementById('message-display').classList.remove('correct-answer');
             }, 500);
             
-            // Animate hero attack
+            // Animate hero attack (which will trigger hit sound and monster reaction on complete)
             this.animateHeroAttack();
             
             // Check if monster is defeated
@@ -930,6 +933,7 @@ class MathRPGGame {
         } else {
             // Reset consecutive correct counter
             this.consecutiveCorrect = 0;
+            this.playErrorSound(); // Play error sound for wrong answer
             
             // Check for active power-ups that might help with wrong answers
             if (this.powerUp && this.powerUp.active && this.powerUp.type === 'health') {
@@ -1175,6 +1179,11 @@ class MathRPGGame {
                 })
                 .onComplete(() => {
                     console.log('Forward tween complete, starting backward tween');
+                    // Play hit sound and trigger monster reaction when attack connects
+                    this.playHitSound(); 
+                    this.animateMonsterHit(); 
+                    // Removed call to playRandomPainSound();
+                    
                     // Move back
                     const moveBack = { x: targetPosition };
                     new TWEEN.Tween(moveBack)
@@ -1207,6 +1216,56 @@ class MathRPGGame {
                 this.monster.visible = false;
             })
             .start();
+    }
+
+    /**
+     * Animate monster getting hit (shrink effect)
+     */
+    animateMonsterHit() {
+        if (!this.monster) return;
+
+        const originalScale = this.monster.scale.x; // Assuming uniform scaling
+        const hitScale = originalScale * 0.8; // Shrink to 80%
+
+        const shrinkTween = new TWEEN.Tween(this.monster.scale)
+            .to({ x: hitScale, y: hitScale, z: hitScale }, 100) // Quick shrink
+            .easing(TWEEN.Easing.Quadratic.Out);
+
+        const growTween = new TWEEN.Tween(this.monster.scale)
+            .to({ x: originalScale, y: originalScale, z: originalScale }, 150) // Grow back
+            .easing(TWEEN.Easing.Bounce.Out);
+
+        shrinkTween.chain(growTween); // Grow back after shrinking
+        shrinkTween.start();
+    }
+
+    /**
+     * Play a random hit sound effect
+     */
+    playHitSound() {
+        const hitSoundIds = ['hit-sound-1', 'hit-sound-2', 'hit-sound-3'];
+        const randomSoundId = hitSoundIds[Math.floor(Math.random() * hitSoundIds.length)];
+        const hitSound = document.getElementById(randomSoundId);
+        
+        if (hitSound) {
+            hitSound.currentTime = 0; // Rewind to start if already playing
+            hitSound.play().catch(error => console.error("Error playing hit sound:", error));
+        } else {
+            console.warn(`Hit sound element not found: ${randomSoundId}`);
+        }
+    }
+
+    /**
+     * Play the error sound effect
+     */
+    playErrorSound() {
+        const errorSound = document.getElementById('error-sound');
+        if (errorSound) {
+            errorSound.currentTime = 0; // Rewind to start
+            errorSound.play().catch(error => console.error("Error playing error sound:", error));
+        } else {
+            console.warn(`Error sound element not found: error-sound`);
+        }
     }
     
     /**

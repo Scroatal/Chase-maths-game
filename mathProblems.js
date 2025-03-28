@@ -15,6 +15,8 @@ class MathProblemGenerator {
         this.operationType = 'addition'; // Default operation
         this.specificTable = 0; // 0 means all tables, otherwise specific table (for multiplication/division)
         this.difficulty = 'easy'; // Default difficulty
+        this.problemHistory = []; // Store recent problems
+        this.maxHistorySize = 20; // Keep track of the last 20 problems
     }
 
     /**
@@ -35,28 +37,84 @@ class MathProblemGenerator {
      * @returns {Object} Problem object with question, answer, and display text
      */
     generateProblem(level) {
-        let num1, num2, answer, operator, displayText;
+        let problem;
+        let attempts = 0;
+        const maxAttempts = 10; // Prevent infinite loops
 
-        switch (this.operationType) {
-            case 'addition':
-                return this.generateAdditionProblem(level);
-            case 'subtraction':
-                return this.generateSubtractionProblem(level);
-            case 'multiplication':
-                return this.generateMultiplicationProblem(level);
-            case 'division':
-                return this.generateDivisionProblem(level);
-            default:
-                return this.generateAdditionProblem(level);
+        do {
+            switch (this.operationType) {
+                case 'addition':
+                    problem = this.generateAdditionProblemInternal(level);
+                    break;
+                case 'subtraction':
+                    problem = this.generateSubtractionProblemInternal(level);
+                    break;
+                case 'multiplication':
+                    problem = this.generateMultiplicationProblemInternal(level);
+                    break;
+                case 'division':
+                    problem = this.generateDivisionProblemInternal(level);
+                    break;
+                default:
+                    problem = this.generateAdditionProblemInternal(level);
+            }
+            attempts++;
+        } while (this.isProblemInHistory(problem) && attempts < maxAttempts);
+
+        // Add the unique problem to history
+        this.addProblemToHistory(problem);
+
+        this.currentProblem = problem;
+        this.startTime = Date.now();
+        return this.currentProblem;
+    }
+
+    /**
+     * Checks if a problem (or its commutative equivalent) is in the recent history.
+     * @param {Object} problem - The problem object { num1, num2, operator }
+     * @returns {boolean} True if the problem is in history, false otherwise.
+     */
+    isProblemInHistory(problem) {
+        return this.problemHistory.some(histProblem => {
+            // Check for direct match
+            if (histProblem.num1 === problem.num1 && histProblem.num2 === problem.num2 && histProblem.operator === problem.operator) {
+                return true;
+            }
+            // Check for commutative match (addition and multiplication)
+            if ((problem.operator === '+' || problem.operator === '×') &&
+                histProblem.num1 === problem.num2 && histProblem.num2 === problem.num1 && histProblem.operator === problem.operator) {
+                return true;
+            }
+            return false;
+        });
+    }
+
+    /**
+     * Adds a problem to the history, managing the history size.
+     * @param {Object} problem - The problem object to add.
+     */
+    addProblemToHistory(problem) {
+        // Add the new problem representation (num1, num2, operator)
+        this.problemHistory.push({
+            num1: problem.num1,
+            num2: problem.num2,
+            operator: problem.operator
+        });
+
+        // If history exceeds max size, remove the oldest entry
+        if (this.problemHistory.length > this.maxHistorySize) {
+            this.problemHistory.shift(); // Removes the first element
         }
     }
+
+    // Renamed original generation methods to Internal to be called by the main generateProblem
 
     /**
      * Generate an addition problem
      * @param {number} level - Current game level
      * @returns {Object} Problem object
      */
-    generateAdditionProblem(level) {
+    generateAdditionProblemInternal(level) {
         // Adjust difficulty based on level and selected difficulty
         let max;
         switch (this.difficulty) {
@@ -86,10 +144,8 @@ class MathProblemGenerator {
             answer,
             displayText
         };
-
-        this.startTime = Date.now();
         
-        return this.currentProblem;
+        return this.currentProblem; // Return the generated problem object directly
     }
 
     /**
@@ -97,7 +153,7 @@ class MathProblemGenerator {
      * @param {number} level - Current game level
      * @returns {Object} Problem object
      */
-    generateSubtractionProblem(level) {
+    generateSubtractionProblemInternal(level) {
         // Adjust difficulty based on level and selected difficulty
         let max;
         switch (this.difficulty) {
@@ -138,10 +194,8 @@ class MathProblemGenerator {
             answer,
             displayText
         };
-
-        this.startTime = Date.now();
         
-        return this.currentProblem;
+        return this.currentProblem; // Return the generated problem object directly
     }
 
     /**
@@ -149,7 +203,7 @@ class MathProblemGenerator {
      * @param {number} level - Current game level
      * @returns {Object} Problem object
      */
-    generateMultiplicationProblem(level) {
+    generateMultiplicationProblemInternal(level) {
         let num1, num2;
         let maxTable, maxMultiplier;
         
@@ -193,10 +247,8 @@ class MathProblemGenerator {
             answer,
             displayText
         };
-
-        this.startTime = Date.now();
         
-        return this.currentProblem;
+        return this.currentProblem; // Return the generated problem object directly
     }
 
     /**
@@ -204,7 +256,7 @@ class MathProblemGenerator {
      * @param {number} level - Current game level
      * @returns {Object} Problem object
      */
-    generateDivisionProblem(level) {
+    generateDivisionProblemInternal(level) {
         let num1, num2, answer;
         let maxDivisor, maxMultiplier;
         
@@ -221,31 +273,7 @@ class MathProblemGenerator {
             case 'hard':
                 maxDivisor = Math.min(level + 3, 12); // Cap at 12
                 maxMultiplier = 12; // Always up to 12
-                
-                // In hard mode, sometimes include non-whole number results
-                if (level > 5 && Math.random() < 0.2) {
-                    // Create a division problem with a remainder
-                    num2 = Math.floor(Math.random() * maxDivisor) + 2; // Divisor (avoid 1)
-                    answer = Math.floor(Math.random() * maxMultiplier) + 1; // Quotient
-                    const remainder = Math.floor(Math.random() * (num2 - 1)) + 1; // Remainder
-                    num1 = (answer * num2) + remainder; // Dividend
-                    
-                    const operator = '÷';
-                    const displayText = `${num1} ${operator} ${num2} = ?`;
-                    
-                    this.currentProblem = {
-                        num1,
-                        num2,
-                        operator,
-                        answer, // This will be the whole number part only
-                        displayText,
-                        hasRemainder: true,
-                        remainder: remainder
-                    };
-                    
-                    this.startTime = Date.now();
-                    return this.currentProblem;
-                }
+                // Removed block that generated remainders for hard mode
                 break;
             default:
                 maxDivisor = Math.min(level + 2, 12);
@@ -277,10 +305,8 @@ class MathProblemGenerator {
             displayText,
             hasRemainder: false
         };
-
-        this.startTime = Date.now();
         
-        return this.currentProblem;
+        return this.currentProblem; // Return the generated problem object directly
     }
 
     /**
